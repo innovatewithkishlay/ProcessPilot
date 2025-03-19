@@ -1,46 +1,59 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import psutil
-from process_monitor import get_processes, kill_process
+from utils import advisory_message
 
-def refresh_process_list():
+def refresh_processes():
+    """Fetch and display running processes in the table."""
     for row in tree.get_children():
         tree.delete(row)
-    
-    processes = get_processes()
-    for proc in processes:
-        tree.insert("", "end", values=proc)
 
-def on_kill():
+    for process in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
+        try:
+            tree.insert("", "end", values=(process.info['pid'], process.info['name'], process.info['cpu_percent'], process.info['memory_percent']))
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    advisory_label.config(text=advisory_message())
+
+def kill_selected_process():
+    """Terminates the selected process."""
     selected_item = tree.selection()
     if not selected_item:
-        messagebox.showwarning("Warning", "Please select a process to kill.")
+        messagebox.showwarning("Warning", "No process selected!")
         return
-    
-    proc_id = tree.item(selected_item, 'values')[0]  # Get Process ID
-    if kill_process(int(proc_id)):
-        messagebox.showinfo("Success", "Process terminated successfully.")
-        refresh_process_list()
-    else:
-        messagebox.showerror("Error", "Failed to terminate the process.")
+
+    process_data = tree.item(selected_item, "values")
+    pid = int(process_data[0])
+
+    try:
+        psutil.Process(pid).terminate()
+        messagebox.showinfo("Success", f"Process {pid} terminated!")
+        refresh_processes()
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to terminate process: {e}")
 
 # GUI Setup
 root = tk.Tk()
-root.title("Process Monitor")
+root.title("🔍 Process Monitor")
 root.geometry("600x400")
 
-tree = ttk.Treeview(root, columns=("PID", "Name", "CPU%", "Memory%"), show="headings")
-tree.heading("PID", text="PID")
-tree.heading("Name", text="Name")
-tree.heading("CPU%", text="CPU %")
-tree.heading("Memory%", text="Memory %")
-tree.pack(fill=tk.BOTH, expand=True)
+columns = ("PID", "Process Name", "CPU %", "Memory %")
+tree = ttk.Treeview(root, columns=columns, show="headings")
+for col in columns:
+    tree.heading(col, text=col)
+    tree.column(col, width=150)
 
-btn_refresh = tk.Button(root, text="Refresh", command=refresh_process_list)
-btn_refresh.pack(side=tk.LEFT, padx=10, pady=10)
+tree.pack(fill="both", expand=True)
 
-btn_kill = tk.Button(root, text="Kill Process", command=on_kill)
-btn_kill.pack(side=tk.RIGHT, padx=10, pady=10)
+btn_frame = tk.Frame(root)
+btn_frame.pack(pady=10)
 
-refresh_process_list()
+tk.Button(btn_frame, text="🔄 Refresh", command=refresh_processes).pack(side="left", padx=5)
+tk.Button(btn_frame, text="❌ Kill Process", command=kill_selected_process).pack(side="left", padx=5)
+
+advisory_label = tk.Label(root, text="", fg="red", wraplength=550)
+advisory_label.pack(pady=10)
+
+refresh_processes()
 root.mainloop()
