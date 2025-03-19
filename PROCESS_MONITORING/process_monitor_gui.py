@@ -19,8 +19,6 @@ def update_process_list():
             continue
 
     root.after(2000, update_process_list) 
-
-s
 def kill_process():
     selected_item = tree.selection()
     if selected_item:
