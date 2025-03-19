@@ -1,100 +1,109 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import psutil
-import subprocess
+
+def get_processes():
+    processes = []
+    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
+        processes.append(proc.info)
+    return processes
 
 def update_process_list():
     for row in tree.get_children():
         tree.delete(row)
     
-    high_cpu = False
-    high_mem = False
-    total_cpu = 0
-    total_mem = 0
-
-    for proc in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent', 'memory_percent']):
-        try:
-            pid = proc.info['pid']
-            name = proc.info['name']
-            cpu = proc.info['cpu_percent']
-            mem = proc.info['memory_percent']
-            
-            total_cpu += cpu
-            total_mem += mem
-
-            if cpu > 50:  # If a process is using >50% CPU
-                high_cpu = True
-            if mem > 50:  # If a process is using >50% Memory
-                high_mem = True
-
-            tree.insert("", "end", values=(pid, name, f"{cpu:.2f}%", f"{mem:.2f}%"))
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            continue
-
-    if high_cpu or high_mem:
-        status_label.config(text="⚠️ High Resource Usage Detected!", fg="red")
+    processes = get_processes()
+    high_usage_detected = False
+    high_usage_processes = []
+    
+    for process in processes:
+        pid = process['pid']
+        name = process['name']
+        cpu = process['cpu_percent']
+        memory = process['memory_percent']
+        
+        if cpu > 50 or memory > 50:  # Threshold for high usage
+            high_usage_detected = True
+            high_usage_processes.append(f"{name} (PID: {pid}) - CPU: {cpu}%, Memory: {memory}%")
+        
+        tree.insert("", "end", values=(pid, name, f"{cpu:.2f}%", f"{memory:.2f}%"))
+    
+    if high_usage_detected:
+        alert_label.config(text="⚠️ High Resource Usage Detected!", fg="red")
     else:
-        status_label.config(text="✅ Everything is Running Fine!", fg="green")
+        alert_label.config(text="✅ Everything is running fine!", fg="green")
 
-    root.after(2000, update_process_list)  
-
-def kill_process():
+def kill_selected_process():
     selected_item = tree.selection()
-    if selected_item:
-        pid = tree.item(selected_item, "values")[0]
-        try:
-            subprocess.run(["taskkill", "/F", "/PID", pid], check=True)
-            update_process_list()
-        except subprocess.CalledProcessError:
-            status_label.config(text=f"Failed to terminate process (PID={pid})", fg="red")
+    if not selected_item:
+        messagebox.showwarning("Warning", "No process selected!")
+        return
+    
+    pid = tree.item(selected_item, 'values')[0]
+    try:
+        psutil.Process(int(pid)).terminate()
+        update_process_list()
+        messagebox.showinfo("Success", f"Process {pid} terminated.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to terminate process: {e}")
 
-def give_advice():
-    advice_text = "🔹 Close unnecessary background apps.\n"
-    advice_text += "🔹 Check Task Manager for unusual apps.\n"
-    advice_text += "🔹 Restart heavy applications if lagging.\n"
+def toggle_advice():
+    if advice_frame.winfo_ismapped():
+        advice_frame.pack_forget()
+        advice_button.config(text="Get Advice")
+    else:
+        show_advice()
+        advice_frame.pack(fill='x', padx=10, pady=5)
+        advice_button.config(text="Close Advice")
 
-    for proc in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent', 'memory_percent']):
-        try:
-            cpu = proc.info['cpu_percent']
-            mem = proc.info['memory_percent']
-            if cpu > 50 or mem > 50:
-                advice_text += f"⚠️ Consider closing {proc.info['name']} (CPU: {cpu:.2f}%, MEM: {mem:.2f}%)\n"
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            continue
-
-    advice_label.config(text=advice_text, fg="blue")
+def show_advice():
+    processes = get_processes()
+    advice_text.set("")
+    
+    high_usage_advice = []
+    for process in processes:
+        if process['cpu_percent'] > 50 or process['memory_percent'] > 50:
+            high_usage_advice.append(f"Consider closing {process['name']} (PID: {process['pid']}) to free up resources.")
+    
+    if high_usage_advice:
+        advice_text.set("\n".join(high_usage_advice))
+    else:
+        advice_text.set("No issues detected. Your system is running fine!")
 
 root = tk.Tk()
-root.title("Advanced Process Monitor")
-root.geometry("800x500")
-root.configure(bg="yellow")
+root.title("Process Monitor")
+root.geometry("600x400")
+root.configure(bg="#f7e18e")  # Yellow background
 
-columns = ("PID", "Process Name", "CPU %", "Memory %")
-tree = ttk.Treeview(root, columns=columns, show="headings", height=15, style="Custom.Treeview")
+frame = tk.Frame(root)
+frame.pack(pady=10)
 
-style = ttk.Style()
-style.configure("Treeview.Heading", font=("Arial", 12, "bold"), foreground="black", background="grey")
-style.configure("Treeview", font=("Arial", 11), rowheight=30) 
-style.map("Treeview", background=[("selected", "#cce5ff")])  
+tree = ttk.Treeview(frame, columns=("PID", "Process Name", "CPU %", "Memory %"), show="headings")
+for col in ("PID", "Process Name", "CPU %", "Memory %"):
+    tree.heading(col, text=col)
+    tree.column(col, width=250, anchor="center")
 
-for col in columns:
-    tree.heading(col, text=col, anchor="center")
-    tree.column(col, anchor="center", width=180, stretch=tk.NO)
+tree.pack(side="left", fill="both", expand=True)
+scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+tree.configure(yscrollcommand=scrollbar.set)
+scrollbar.pack(side="right", fill="y")
 
-tree.pack(pady=10, padx=10, fill="both", expand=True)
+alert_label = tk.Label(root, text="", font=("Arial", 12, "bold"), bg="#f7e18e")
+alert_label.pack(pady=5)
 
-status_label = tk.Label(root, text="Checking System...", font=("Arial", 12, "bold"), bg="yellow")
-status_label.pack(pady=5)
+button_frame = tk.Frame(root, bg="#f7e18e")
+button_frame.pack(pady=5)
 
-kill_button = tk.Button(root, text="Kill Selected Process", command=kill_process, bg="red", fg="white", font=("Arial", 12, "bold"))
-kill_button.pack(pady=5)
+kill_button = tk.Button(button_frame, text="Kill Selected Process", command=kill_selected_process, bg="red", fg="white")
+kill_button.pack(side="left", padx=10)
 
-advice_button = tk.Button(root, text="Get Advice", command=give_advice, bg="blue", fg="white", font=("Arial", 12, "bold"))
-advice_button.pack(pady=5)
+advice_button = tk.Button(button_frame, text="Get Advice", command=toggle_advice, bg="blue", fg="white")
+advice_button.pack(side="right", padx=10)
 
-advice_label = tk.Label(root, text="", font=("Arial", 11, "bold"), bg="yellow")
-advice_label.pack(pady=5)
+advice_frame = tk.Frame(root, bg="#fff8dc", relief="solid", bd=1)
+advice_text = tk.StringVar()
+advice_label = tk.Label(advice_frame, textvariable=advice_text, font=("Arial", 10), bg="#fff8dc", wraplength=580, justify="left")
+advice_label.pack(pady=5, padx=5)
 
 update_process_list()
-
 root.mainloop()
