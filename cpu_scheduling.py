@@ -1,35 +1,18 @@
 import tkinter as tk
 from tkinter import messagebox
-import matplotlib.pyplot as plt
-import numpy as np
-
-def draw_gantt_chart(processes, burst_times, start_times):
-    fig, ax = plt.subplots(figsize=(10, 4))
-    y_labels = []
-    colors = ["red", "blue", "green", "purple", "orange"]
-    for i, process in enumerate(processes):
-        ax.barh(y=0, left=start_times[i], width=burst_times[i], color=colors[i % len(colors)], edgecolor="black")
-        ax.text(start_times[i] + burst_times[i] / 2, 0, f"{process}", ha='center', va='center', color='white', fontsize=12)
-        y_labels.append(process)
-    
-    ax.set_xticks(np.arange(0, sum(burst_times) + 1, 1))
-    ax.set_yticks([])
-    ax.set_title("Gantt Chart for CPU Scheduling")
-    ax.set_xlabel("Time")
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
-    plt.show()
+from scheduling_algorithms import fcfs_scheduling
+from gantt_chart import draw_gantt_chart
 
 def schedule_fcfs():
     try:
         process_list = process_entry.get().split(',')
         burst_times = list(map(int, burst_entry.get().split(',')))
+        
         if len(process_list) != len(burst_times):
             messagebox.showerror("Input Error", "Number of processes and burst times must be equal")
             return
         
-        start_times = [0] * len(process_list)
-        for i in range(1, len(process_list)):
-            start_times[i] = start_times[i - 1] + burst_times[i - 1]
+        start_times, completion_times = fcfs_scheduling(burst_times)
         
         draw_gantt_chart(process_list, burst_times, start_times)
     except ValueError:
