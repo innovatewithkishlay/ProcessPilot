@@ -2,6 +2,9 @@ import psutil
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+import os
+import sys
+import ctypes
 
 def get_processes():
     processes = []
@@ -21,25 +24,67 @@ def refresh_processes():
     if search_query == "search process...":
         search_query = ""
     
+    selected_item = tree.selection()
+    selected_process = None
+    if selected_item:
+        selected_process = tree.item(selected_item[0])['values'][0]  # Get process name
+
     for i in tree.get_children():
         tree.delete(i)
+
     for process in get_processes():
         if search_query in process[0].lower():
-            tree.insert('', 'end', values=process)
+            item_id = tree.insert('', 'end', values=process)
+            # Restore selection if the same process name exists
+            if selected_process and process[0] == selected_process:
+                tree.selection_set(item_id)
+
     root.after(2000, refresh_processes)
+
+
+def is_admin():
+    """Check if the script is running with administrator privileges."""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+def run_as_admin():
+    """Restart the script with admin privileges in the same window."""
+    if not is_admin():
+        messagebox.showinfo("Admin Required", "Restarting with administrator privileges...")
+        params = " ".join(f'"{arg}"' for arg in sys.argv) 
+
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, params, None, 1)
+        root.destroy() 
+        sys.exit()  
+
 
 def kill_selected():
     selected_item = tree.selection()
     if selected_item:
         name = tree.item(selected_item)['values'][0]
         try:
+            killed = False  
             for proc in psutil.process_iter(attrs=['name']):
                 if proc.info['name'] == name:
-                    proc.terminate()
+                    proc.terminate()  
+                    proc.wait(timeout=3) 
+                    killed = True
                     break
-            refresh_processes()
+
+            if killed:
+                refresh_processes()  
+            else:
+                messagebox.showerror("Process Not Killed", f"Could not terminate {name}. It might already be closed.")
         except psutil.NoSuchProcess:
-            pass
+            messagebox.showinfo("Process Not Found", f"Process {name} no longer exists.")
+            refresh_processes()
+        except psutil.AccessDenied:
+            response = messagebox.askyesno("Admin Privileges Required", 
+                                           f"Permission denied to kill {name}.\nWould you like to restart with admin privileges?")
+            if response:
+                run_as_admin()
 
 def toggle_advice():
     if advice_label.winfo_ismapped():
