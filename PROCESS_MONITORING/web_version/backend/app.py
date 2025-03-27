@@ -14,6 +14,7 @@ def fetch_processes():
 def kill_selected_process():
     data = request.json
     pid = data.get('pid')
+
     if not pid:
         return jsonify({'error': 'PID is required'}), 400
     result = kill_process(pid)

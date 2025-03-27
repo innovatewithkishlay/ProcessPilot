@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FaList, FaMicrochip, FaMemory, FaBars } from "react-icons/fa";
+import {
+  FaTasks,
+  FaChartLine,
+  FaMemory,
+  FaBars,
+  FaRobot,
+} from "react-icons/fa";
 
 function Sidebar({ setFilter }) {
   const [activeSection, setActiveSection] = useState("all");
@@ -24,26 +30,30 @@ function Sidebar({ setFilter }) {
       animate={{ x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Toggle Button */}
-      <div
-        className="flex items-center justify-end p-2 cursor-pointer"
-        onClick={toggleSidebar}
-      >
-        <FaBars className="text-white text-xl hover:text-sky-500 transition" />
+      {/* Sidebar Header */}
+      <div className="flex items-center justify-between p-4">
+        {!isCollapsed && <h2 className="text-xl font-bold">Options</h2>}
+        <FaBars
+          className="text-white text-xl cursor-pointer hover:text-sky-500 transition"
+          onClick={toggleSidebar}
+        />
       </div>
 
+      {/* Decorative Divider */}
+      <div className="border-t border-gray-700 my-4"></div>
+
       {/* Sidebar Content */}
-      <ul className="space-y-4 mt-6">
+      <ul className="space-y-4">
         {/* All Processes */}
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "all"
-              ? "bg-sky-500 text-white"
+              ? "bg-sky-500 text-white shadow-lg"
               : "hover:bg-gray-700"
           }`}
           onClick={() => handleSectionClick("all")}
         >
-          <FaList className="mr-3 text-lg" />
+          <FaTasks className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">All Processes</span>}
         </li>
 
@@ -51,12 +61,12 @@ function Sidebar({ setFilter }) {
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "highCpu"
-              ? "bg-sky-500 text-white"
+              ? "bg-sky-500 text-white shadow-lg"
               : "hover:bg-gray-700"
           }`}
           onClick={() => handleSectionClick("highCpu")}
         >
-          <FaMicrochip className="mr-3 text-lg" />
+          <FaChartLine className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">High CPU Usage</span>}
         </li>
 
@@ -64,13 +74,26 @@ function Sidebar({ setFilter }) {
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "highMemory"
-              ? "bg-sky-500 text-white"
+              ? "bg-sky-500 text-white shadow-lg"
               : "hover:bg-gray-700"
           }`}
           onClick={() => handleSectionClick("highMemory")}
         >
           <FaMemory className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">High Memory Usage</span>}
+        </li>
+
+        {/* AI Chat */}
+        <li
+          className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
+            activeSection === "aiChat"
+              ? "bg-sky-500 text-white shadow-lg"
+              : "hover:bg-gray-700"
+          }`}
+          onClick={() => handleSectionClick("aiChat")}
+        >
+          <FaRobot className="mr-3 text-lg" />
+          {!isCollapsed && <span className="text-lg">AI Chat</span>}
         </li>
       </ul>
     </motion.div>

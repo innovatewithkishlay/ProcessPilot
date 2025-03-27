@@ -21,12 +21,18 @@ def get_processes():
 def kill_process(pid):
     try:
         proc = psutil.Process(pid)
+        proc_name = proc.name()
+        print(f"Attempting to kill process: {proc_name} (PID: {pid})")  # Debugging log
         proc.terminate()
         proc.wait(timeout=3)
-        return {'success': True, 'message': f"Process {proc.name()} (PID: {pid}) terminated."}
+        print(f"Successfully killed process: {proc_name} (PID: {pid})")  # Debugging log
+        return {'success': True, 'message': f"Successfully killed the process: {proc_name}"}
     except psutil.NoSuchProcess:
-        return {'success': False, 'message': f"Process with PID {pid} not found."}
+        print(f"Process with PID {pid} was already terminated or not found.")  # Debugging log
+        return {'success': True, 'message': f"The process was already terminated or not found."}
     except psutil.AccessDenied:
-        return {'success': False, 'message': f"Permission denied to kill process {pid}."}
+        print(f"Permission denied to kill process with PID {pid}.")  # Debugging log
+        return {'success': False, 'message': "This process is critical for the system to run and cannot be terminated."}
     except Exception as e:
+        print(f"Error while killing process with PID {pid}: {e}")  # Debugging log
         return {'success': False, 'message': str(e)}

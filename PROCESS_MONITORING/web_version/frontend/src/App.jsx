@@ -10,109 +10,101 @@ function App() {
   const [filter, setFilter] = useState("all");
   const [message, setMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
-  const [adminConfirmation, setAdminConfirmation] = useState(null); // For admin confirmation
 
   useEffect(() => {
     fetchProcesses();
   }, []);
 
-  // Fetch processes from the backend
   const fetchProcesses = async () => {
     try {
       const response = await axios.get("http://127.0.0.1:5000/api/processes");
-      const filteredProcesses = filterValidProcesses(response.data.processes);
-      setProcesses(filteredProcesses);
+      console.log("Backend Response:", response.data.processes);
+      setProcesses(response.data.processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
     }
   };
 
-  // Filter out invalid or useless processes
   const filterValidProcesses = (processList) => {
     return processList.filter(
       (process) =>
-        process.name && // Ensure the process has a valid name
-        process.name.toLowerCase() !== "unknown" && // Exclude "Unknown" processes
-        process.cpu_percent !== undefined && // Ensure CPU usage is defined
-        process.memory_usage !== undefined // Ensure memory usage is defined
+        process.name &&
+        process.cpu_percent !== undefined &&
+        process.memory_usage !== undefined
     );
   };
 
-  // Kill a process by PID
   const killProcess = async (pid) => {
     try {
+      setMessage("Processing your request...");
+      setShowPopup(true);
+
       const response = await axios.post("http://127.0.0.1:5000/api/kill", {
         pid,
       });
+
       if (response.data.success) {
-        setMessage(response.data.message); // Display success or "already terminated" message
-        fetchProcesses(); // Refresh the process list
-      } else if (response.data.requires_admin) {
-        // Admin privileges required
-        setAdminConfirmation({ pid, message: response.data.message });
+        setMessage(response.data.message || "Successfully killed the process.");
+        fetchProcesses();
       } else {
-        setMessage(response.data.message); // Display the error message from the backend
+        setMessage(response.data.message || "Failed to kill the process.");
       }
-      setShowPopup(true);
     } catch (error) {
-      setMessage(`Error killing process with PID ${pid}.`);
-      setShowPopup(true);
+      console.error("Error in killProcess:", error); // Debugging log
+      setMessage("An error occurred while trying to kill the process.");
     }
   };
 
-  // Confirm admin privilege and kill the process
-  const confirmAdminKill = async (pid) => {
-    setAdminConfirmation(null); // Clear the admin confirmation
-    try {
-      const response = await axios.post("http://127.0.0.1:5000/api/kill", {
-        pid,
-      });
-      if (response.data.success) {
-        setMessage(response.data.message); // Display success message
-        fetchProcesses(); // Refresh the process list
-      } else {
-        setMessage(response.data.message); // Display the error message from the backend
-      }
-      setShowPopup(true);
-    } catch (error) {
-      setMessage(`Error killing process with PID ${pid}.`);
-      setShowPopup(true);
-    }
-  };
-
-  // Filter processes based on the selected filter
   const filteredProcesses = processes.filter((process) => {
-    if (filter === "highCpu") return process.cpu_percent > 50;
-    if (filter === "highMemory") return parseFloat(process.memory_usage) > 100;
-    return true;
+    if (filter === "highCpu") return process.cpu_percent > 50; // Show processes with CPU usage > 50%
+    if (filter === "highMemory") return parseFloat(process.memory_usage) > 100; // Show processes with memory usage > 100 MB
+    return true; // Show all processes for "all"
   });
+
+  const getTitle = () => {
+    if (filter === "all") return "All Processes";
+    if (filter === "highCpu") return "High CPU Usage";
+    if (filter === "highMemory") return "High Memory Usage";
+    if (filter === "aiChat") return "AI Chat";
+    return "ProcessPilot";
+  };
 
   return (
     <div className="flex">
       <Sidebar setFilter={setFilter} />
       <div className="ml-64 p-4 w-full">
-        <h1 className="text-3xl font-bold mb-4">Process Monitor</h1>
-        <ProcessTable
-          processes={filteredProcesses}
-          killProcess={killProcess}
-          fetchProcesses={fetchProcesses} // Pass fetchProcesses for auto-refresh
-        />
-        <AIAdvice />
+        {/* Project Name with Gradient */}
+        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mb-4">
+          ProcessPilot
+        </h1>
+
+        <h2 className="text-2xl font-bold mb-6">{getTitle()}</h2>
+
+        {/* Render Content Based on Filter */}
+        {filter === "all" && (
+          <ProcessTable
+            processes={filteredProcesses}
+            fetchProcesses={fetchProcesses}
+            killProcess={killProcess}
+          />
+        )}
+        {filter === "highCpu" && (
+          <ProcessTable
+            processes={filteredProcesses}
+            fetchProcesses={fetchProcesses}
+            killProcess={killProcess}
+          />
+        )}
+        {filter === "highMemory" && (
+          <ProcessTable
+            processes={filteredProcesses}
+            fetchProcesses={fetchProcesses}
+            killProcess={killProcess}
+          />
+        )}
+        {filter === "aiChat" && <AIAdvice />}
         {showPopup && (
           <Popup message={message} onClose={() => setShowPopup(false)} />
-        )}
-        {adminConfirmation && (
-          <Popup
-            message={adminConfirmation.message}
-            onClose={() => setAdminConfirmation(null)}
-          >
-            <button
-              className="bg-red-600 text-white px-4 py-2 rounded mt-4"
-              onClick={() => confirmAdminKill(adminConfirmation.pid)}
-            >
-              Yes, Kill
-            </button>
-          </Popup>
         )}
       </div>
     </div>
