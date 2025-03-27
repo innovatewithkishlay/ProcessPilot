@@ -70,6 +70,7 @@ function App() {
     if (filter === "highMemory") return "High Memory Usage";
     if (filter === "aiChat") return "AI Chat";
     if (filter === "cpuPerformance") return "CPU Performance";
+    if (filter === "processInsights") return "Process Insights";
     return "ProcessPilot";
   };
 
@@ -77,10 +78,14 @@ function App() {
     <div className="flex">
       <Sidebar setFilter={setFilter} />
       <div className="ml-64 p-4 w-full">
+        {/* Main Title */}
         <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mb-4">
           ProcessPilot
         </h1>
+        {/* Dynamic Subtitle */}
         <h2 className="text-2xl font-bold mb-6">{getTitle()}</h2>
+
+        {/* Render Content Based on Filter */}
         {filter === "all" && (
           <>
             <input

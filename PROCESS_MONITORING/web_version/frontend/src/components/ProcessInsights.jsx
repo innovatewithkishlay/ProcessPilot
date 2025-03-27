@@ -10,7 +10,15 @@ function ProcessInsights() {
         const response = await axios.get(
           "http://127.0.0.1:5000/api/process-insights"
         );
-        setInsights(response.data);
+
+        const validProcesses = response.data.filter(
+          (process) =>
+            process.name &&
+            process.cpu_usage !== undefined &&
+            process.memory_usage !== undefined
+        );
+
+        setInsights(validProcesses);
       } catch (error) {
         console.error("Error fetching process insights:", error);
       }
@@ -18,6 +26,13 @@ function ProcessInsights() {
 
     fetchInsights();
   }, []);
+
+  const getRecommendationStyle = (recommendation) => {
+    if (recommendation.toLowerCase().includes("normal")) {
+      return "bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold";
+    }
+    return "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-semibold";
+  };
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-lg">
@@ -33,17 +48,32 @@ function ProcessInsights() {
             </tr>
           </thead>
           <tbody>
-            {insights.map((process) => (
-              <tr key={process.pid} className="hover:bg-gray-50">
-                <td className="p-2 border">{process.pid}</td>
-                <td className="p-2 border">{process.name}</td>
-                <td className="p-2 border">{process.cpu_usage}</td>
-                <td className="p-2 border">{process.memory_usage}</td>
-                <td className="p-2 border text-sm text-gray-600">
-                  {process.recommendation}
+            {insights.length > 0 ? (
+              insights.map((process) => (
+                <tr key={process.pid} className="hover:bg-gray-50">
+                  <td className="p-2 border">{process.pid}</td>
+                  <td className="p-2 border">{process.name}</td>
+                  <td className="p-2 border">{process.cpu_usage}</td>
+                  <td className="p-2 border">{process.memory_usage}</td>
+                  <td className="p-2 border">
+                    <span
+                      className={getRecommendationStyle(process.recommendation)}
+                    >
+                      {process.recommendation}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="p-4 text-center text-gray-500 border"
+                >
+                  No valid processes found.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

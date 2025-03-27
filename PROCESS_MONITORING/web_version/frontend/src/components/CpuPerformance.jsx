@@ -74,13 +74,13 @@ function CpuPerformance() {
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-lg">
+    <div className="p-4 bg-white rounded-lg shadow-lg max-w-full overflow-hidden">
       <div className="relative w-full h-64">
         <Line data={data} options={options} />
       </div>
       <div className="mt-6">
         <h3 className="text-xl font-semibold mb-4">System Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div className="p-4 bg-gray-100 rounded-lg shadow">
             <h4 className="text-lg font-semibold text-gray-800">
               Logical Cores
