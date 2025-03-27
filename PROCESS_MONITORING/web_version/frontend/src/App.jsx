@@ -10,6 +10,7 @@ function App() {
   const [filter, setFilter] = useState("all");
   const [message, setMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchProcesses();
@@ -58,6 +59,8 @@ function App() {
   const filteredProcesses = processes.filter((process) => {
     if (filter === "highCpu") return process.cpu_percent > 50; // Show processes with CPU usage > 50%
     if (filter === "highMemory") return parseFloat(process.memory_usage) > 100; // Show processes with memory usage > 100 MB
+    if (filter === "all" && searchQuery)
+      return process.name.toLowerCase().includes(searchQuery.toLowerCase());
     return true; // Show all processes for "all"
   });
 
@@ -82,11 +85,26 @@ function App() {
 
         {/* Render Content Based on Filter */}
         {filter === "all" && (
-          <ProcessTable
-            processes={filteredProcesses}
-            fetchProcesses={fetchProcesses}
-            killProcess={killProcess}
-          />
+          <>
+            <input
+              type="text"
+              placeholder="Search processes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {filteredProcesses.length > 0 ? (
+              <ProcessTable
+                processes={filteredProcesses}
+                fetchProcesses={fetchProcesses}
+                killProcess={killProcess}
+              />
+            ) : (
+              <div className="text-center text-gray-500 text-lg mt-4">
+                No such process found.
+              </div>
+            )}
+          </>
         )}
         {filter === "highCpu" && (
           <ProcessTable

@@ -10,7 +10,7 @@ import {
 
 function Sidebar({ setFilter }) {
   const [activeSection, setActiveSection] = useState("all");
-  const [isCollapsed, setIsCollapsed] = useState(false); // State for collapsing sidebar
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleSectionClick = (section) => {
     setActiveSection(section);
@@ -25,12 +25,11 @@ function Sidebar({ setFilter }) {
     <motion.div
       className={`bg-gray-900 text-white h-full fixed shadow-lg ${
         isCollapsed ? "w-20" : "w-64"
-      } transition-all duration-300 ease-in-out`}
+      } transition-all duration-300 ease-in-out rounded-tr-3xl rounded-br-3xl`}
       initial={{ x: -100 }}
       animate={{ x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Sidebar Header */}
       <div className="flex items-center justify-between p-4">
         {!isCollapsed && <h2 className="text-xl font-bold">Options</h2>}
         <FaBars
@@ -38,13 +37,8 @@ function Sidebar({ setFilter }) {
           onClick={toggleSidebar}
         />
       </div>
-
-      {/* Decorative Divider */}
       <div className="border-t border-gray-700 my-4"></div>
-
-      {/* Sidebar Content */}
       <ul className="space-y-4">
-        {/* All Processes */}
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "all"
@@ -56,8 +50,6 @@ function Sidebar({ setFilter }) {
           <FaTasks className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">All Processes</span>}
         </li>
-
-        {/* High CPU Usage */}
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "highCpu"
@@ -69,8 +61,6 @@ function Sidebar({ setFilter }) {
           <FaChartLine className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">High CPU Usage</span>}
         </li>
-
-        {/* High Memory Usage */}
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "highMemory"
@@ -82,8 +72,6 @@ function Sidebar({ setFilter }) {
           <FaMemory className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">High Memory Usage</span>}
         </li>
-
-        {/* AI Chat */}
         <li
           className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
             activeSection === "aiChat"
