@@ -6,6 +6,8 @@ import {
   FaMemory,
   FaBars,
   FaRobot,
+  FaChartPie,
+  FaLightbulb,
 } from "react-icons/fa";
 
 function Sidebar({ setFilter }) {
@@ -82,6 +84,28 @@ function Sidebar({ setFilter }) {
         >
           <FaRobot className="mr-3 text-lg" />
           {!isCollapsed && <span className="text-lg">AI Chat</span>}
+        </li>
+        <li
+          className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
+            activeSection === "cpuPerformance"
+              ? "bg-sky-500 text-white shadow-lg"
+              : "hover:bg-gray-700"
+          }`}
+          onClick={() => handleSectionClick("cpuPerformance")}
+        >
+          <FaChartPie className="mr-3 text-lg" />
+          {!isCollapsed && <span className="text-lg">CPU Performance</span>}
+        </li>
+        <li
+          className={`flex items-center cursor-pointer p-3 rounded-lg transition ${
+            activeSection === "processInsights"
+              ? "bg-sky-500 text-white shadow-lg"
+              : "hover:bg-gray-700"
+          }`}
+          onClick={() => handleSectionClick("processInsights")}
+        >
+          <FaLightbulb className="mr-3 text-lg" />
+          {!isCollapsed && <span className="text-lg">Process Insights</span>}
         </li>
       </ul>
     </motion.div>
