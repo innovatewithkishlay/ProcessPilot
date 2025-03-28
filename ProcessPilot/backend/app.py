@@ -1,13 +1,144 @@
 import os
+import shutil
 import psutil
-import wmi
-import pythoncom
-from flask import Flask, jsonify, request
+import subprocess
+import requests
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
 from process_utils import get_processes, kill_process
 
+# Load environment variables
+load_dotenv()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+if not GROQ_API_KEY:
+    print("Error: GROQ_API_KEY is not defined in the .env file.")
+    exit(1)
+
 app = Flask(__name__)
-CORS(app)  
+CORS(app)
+
+# Helper function to execute OS commands
+def execute_command(command, args):
+    try:
+        if command == "move_file":
+            src, dest = args
+            shutil.move(src, dest)
+            return f"File moved from {src} to {dest}."
+        elif command == "delete_file":
+            file_path = args[0]
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                return f"File {file_path} has been deleted."
+            else:
+                return f"File {file_path} does not exist."
+        elif command == "rename_file":
+            src, dest = args
+            os.rename(src, dest)
+            return f"File renamed from {src} to {dest}."
+        elif command == "list_processes":
+            processes = [proc.info for proc in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent'])]
+            return processes
+        elif command == "cpu_usage":
+            return f"Current CPU usage is {psutil.cpu_percent(interval=1)}%."
+        elif command == "memory_usage":
+            memory = psutil.virtual_memory()
+            return f"Total memory: {memory.total / (1024 ** 3):.2f} GB, Used: {memory.used / (1024 ** 3):.2f} GB, Free: {memory.available / (1024 ** 3):.2f} GB."
+        elif command == "disk_usage":
+            disk = psutil.disk_usage('/')
+            return f"Total disk space: {disk.total / (1024 ** 3):.2f} GB, Used: {disk.used / (1024 ** 3):.2f} GB, Free: {disk.free / (1024 ** 3):.2f} GB."
+        elif command == "open_task_manager":
+            subprocess.Popen("taskmgr")
+            return "Task Manager opened."
+        elif command == "open_file_explorer":
+            subprocess.Popen("explorer")
+            return "File Explorer opened."
+        else:
+            return "Unknown command."
+    except Exception as e:
+        return f"Error executing command: {str(e)}"
+
+# Helper function to detect intent and execute commands
+def detect_and_execute_intent(user_input):
+    user_input = user_input.lower()
+
+    # File operations
+    if "move file" in user_input:
+        parts = user_input.split(" to ")
+        src = parts[0].replace("move file ", "").strip()
+        dest = parts[1].strip()
+        return execute_command("move_file", (src, dest))
+    elif "delete" in user_input and "file" in user_input:
+        file_path = user_input.replace("delete file ", "").strip()
+        return execute_command("delete_file", (file_path,))
+    elif "rename file" in user_input:
+        parts = user_input.split(" to ")
+        src = parts[0].replace("rename file ", "").strip()
+        dest = parts[1].strip()
+        return execute_command("rename_file", (src, dest))
+
+    # System stats
+    elif "cpu usage" in user_input:
+        return execute_command("cpu_usage", None)
+    elif "memory usage" in user_input:
+        return execute_command("memory_usage", None)
+    elif "disk usage" in user_input:
+        return execute_command("disk_usage", None)
+
+    # Process management
+    elif "list processes" in user_input or "running processes" in user_input:
+        processes = execute_command("list_processes", None)
+        return "\n".join([f"PID: {proc['pid']}, Name: {proc['name']}, CPU: {proc['cpu_percent']}%" for proc in processes])
+
+    # Open system tools
+    elif "open task manager" in user_input:
+        return execute_command("open_task_manager", None)
+    elif "open file explorer" in user_input:
+        return execute_command("open_file_explorer", None)
+
+    # Default: Use Groq API for general queries
+    else:
+        return ask_groq(user_input)
+
+# Helper function to query Groq API
+def ask_groq(user_message):
+    try:
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [{"role": "user", "content": user_message}],
+        }
+        response = requests.post(GROQ_URL, json=payload, headers=headers)
+        response.raise_for_status()  # Raise an error for HTTP errors
+
+        # Extract the chatbot's response
+        return (
+            response.json()
+            .get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "No response from the chatbot.")
+        )
+    except requests.exceptions.RequestException as e:
+        print("Groq API Error:", e)
+        return "Sorry, I couldn't fetch a response. Please check your internet connection."
+
+# Flask route for the chatbot
+@app.route('/ask-ai', methods=['POST'])
+def ask_ai():
+    data = request.json
+    user_input = data.get("query", "")
+    if not user_input:
+        return jsonify({"response": "<b>Please provide a valid query.</b>"}), 400
+
+    # Get response from Groq API
+    response = ask_groq(user_input)
+    formatted_response = f"<b>{response}</b>"  # Make the response bold
+    return jsonify({"response": formatted_response})
 
 @app.route('/api/processes', methods=['GET'])
 def fetch_processes():
@@ -69,91 +200,6 @@ def process_insights():
             continue
 
     return jsonify(insights)
-
-@app.route('/ask-ai', methods=['POST'])
-def ask_ai():
-    try:
-        pythoncom.CoInitialize()  
-        query = request.json.get('query', '').lower()
-        c = wmi.WMI()
-
-        if "slow" in query or "laptop is running slow" in query:
-            cpu_load = c.Win32_Processor()[0].LoadPercentage
-            os_info = c.Win32_OperatingSystem()[0]
-            total_memory = round(int(os_info.TotalVisibleMemorySize) / 1024 / 1024, 2)
-            free_memory = round(int(os_info.FreePhysicalMemory) / 1024 / 1024, 2)
-            used_memory = total_memory - free_memory
-
-            return jsonify({
-                "response": f"Your laptop is running slow. Current CPU usage is {cpu_load}%. "
-                            f"Total memory: {total_memory} GB, Used: {used_memory} GB, Free: {free_memory} GB."
-            })
-
-        elif "task taking more time" in query or "high usage" in query:
-            high_usage_processes = []
-            for proc in c.Win32_Process():
-                try:
-                    cpu_usage = proc.PercentProcessorTime
-                    memory_usage = proc.WorkingSetSize / (1024 * 1024)  
-                    if cpu_usage > 50 or memory_usage > 500:  
-                        high_usage_processes.append({
-                            "name": proc.Name,
-                            "pid": proc.ProcessId,
-                            "cpu_usage": f"{cpu_usage}%",
-                            "memory_usage": f"{memory_usage:.2f} MB"
-                        })
-                except Exception:
-                    continue
-
-            if high_usage_processes:
-                response = "Here are the tasks with high usage:\n"
-                for process in high_usage_processes:
-                    response += f"Task: {process['name']}, PID: {process['pid']}, CPU: {process['cpu_usage']}, Memory: {process['memory_usage']}\n"
-                return jsonify({"response": response})
-            else:
-                return jsonify({"response": "No tasks with high usage detected."})
-
-        elif "storage" in query or "disk" in query:
-            drives = c.Win32_LogicalDisk(DriveType=3)
-            storage_info = []
-            for drive in drives:
-                storage_info.append(
-                    f"Drive {drive.DeviceID}: Total {round(int(drive.Size) / (1024 ** 3), 2)} GB, "
-                    f"Free {round(int(drive.FreeSpace) / (1024 ** 3), 2)} GB"
-                )
-            return jsonify({
-                "response": " | ".join(storage_info)
-            })
-
-        elif "tasks" in query or "processes" in query:
-            processes = c.Win32_Process()
-            return jsonify({
-                "response": f"There are currently {len(processes)} running tasks."
-            })
-
-        elif "cpu" in query or "usage" in query:
-            cpu_load = c.Win32_Processor()[0].LoadPercentage
-            return jsonify({
-                "response": f"The current CPU usage is {cpu_load}%."
-            })
-
-        elif "memory" in query or "ram" in query:
-            os_info = c.Win32_OperatingSystem()[0]
-            total_memory = round(int(os_info.TotalVisibleMemorySize) / 1024 / 1024, 2)
-            free_memory = round(int(os_info.FreePhysicalMemory) / 1024 / 1024, 2)
-            used_memory = total_memory - free_memory
-            return jsonify({
-                "response": f"Total memory: {total_memory} GB, Used: {used_memory} GB, Free: {free_memory} GB."
-            })
-
-        else:
-            return jsonify({
-                "response": "I can help with storage, tasks, CPU, or memory-related queries. Please refine your question."
-            })
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"response": f"An error occurred: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

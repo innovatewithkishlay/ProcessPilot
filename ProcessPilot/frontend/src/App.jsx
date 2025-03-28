@@ -68,10 +68,8 @@ function App() {
     if (filter === "all") return "All Processes";
     if (filter === "highCpu") return "High CPU Usage";
     if (filter === "highMemory") return "High Memory Usage";
-    if (filter === "aiChat") return "AI Chat";
     if (filter === "cpuPerformance") return "CPU Performance";
     if (filter === "processInsights") return "Process Insights";
-    return "ProcessPilot";
   };
 
   return (
