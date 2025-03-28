@@ -104,7 +104,7 @@
 
 ## License
 
-This project is open-source and one can upodate it , also it is available under the MIT License.
+This project is open-source and one can update it , also it is available under the MIT License.
 
 ## Author
 
