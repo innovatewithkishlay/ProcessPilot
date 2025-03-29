@@ -8,7 +8,6 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from process_utils import get_processes, kill_process
 
-# Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
