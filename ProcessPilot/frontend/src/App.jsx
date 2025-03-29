@@ -20,7 +20,9 @@ function App() {
 
   const fetchProcesses = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:5000/api/processes");
+      const response = await axios.get(
+        "https://processpilot.onrender.com/api/processes"
+      );
       setProcesses(response.data.processes);
     } catch (error) {
       console.error("Error fetching processes:", error);
@@ -41,9 +43,12 @@ function App() {
       setMessage("Processing your request...");
       setShowPopup(true);
 
-      const response = await axios.post("http://127.0.0.1:5000/api/kill", {
-        pid,
-      });
+      const response = await axios.post(
+        "https://processpilot.onrender.com/api/kill",
+        {
+          pid,
+        }
+      );
 
       if (response.data.success) {
         setMessage(response.data.message || "Successfully killed the process.");
