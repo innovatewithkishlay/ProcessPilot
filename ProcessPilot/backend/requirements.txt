@@ -3,3 +3,4 @@ psutil
 gunicorn
 requests
 flask_cors
+python-dotenv
