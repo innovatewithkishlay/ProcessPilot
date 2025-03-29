@@ -2,3 +2,4 @@ flask
 psutil
 gunicorn
 requests
+flask_cors
