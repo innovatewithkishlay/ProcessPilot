@@ -12,7 +12,7 @@ function AIAdvice() {
     setMessages((prev) => [...prev, { sender: "user", text: query }]);
 
     try {
-      const response = await fetch("http://localhost:5000/ask-ai", {
+      const response = await fetch("https://processpilot.onrender.com/ask-ai", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
