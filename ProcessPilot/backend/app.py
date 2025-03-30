@@ -19,7 +19,6 @@ if not GROQ_API_KEY:
 app = Flask(__name__)
 CORS(app)
 
-# Helper function to execute OS commands
 def execute_command(command, args):
     try:
         if command == "move_file":
@@ -59,11 +58,9 @@ def execute_command(command, args):
     except Exception as e:
         return f"Error executing command: {str(e)}"
 
-# Helper function to detect intent and execute commands
 def detect_and_execute_intent(user_input):
     user_input = user_input.lower()
 
-    # File operations
     if "move file" in user_input:
         parts = user_input.split(" to ")
         src = parts[0].replace("move file ", "").strip()
@@ -78,7 +75,6 @@ def detect_and_execute_intent(user_input):
         dest = parts[1].strip()
         return execute_command("rename_file", (src, dest))
 
-    # System stats
     elif "cpu usage" in user_input:
         return execute_command("cpu_usage", None)
     elif "memory usage" in user_input:
@@ -86,22 +82,18 @@ def detect_and_execute_intent(user_input):
     elif "disk usage" in user_input:
         return execute_command("disk_usage", None)
 
-    # Process management
     elif "list processes" in user_input or "running processes" in user_input:
         processes = execute_command("list_processes", None)
         return "\n".join([f"PID: {proc['pid']}, Name: {proc['name']}, CPU: {proc['cpu_percent']}%" for proc in processes])
 
-    # Open system tools
     elif "open task manager" in user_input:
         return execute_command("open_task_manager", None)
     elif "open file explorer" in user_input:
         return execute_command("open_file_explorer", None)
 
-    # Default: Use Groq API for general queries
     else:
         return ask_groq(user_input)
 
-# Helper function to query Groq API
 def ask_groq(user_message):
     try:
         headers = {
@@ -113,9 +105,8 @@ def ask_groq(user_message):
             "messages": [{"role": "user", "content": user_message}],
         }
         response = requests.post(GROQ_URL, json=payload, headers=headers)
-        response.raise_for_status()  # Raise an error for HTTP errors
+        response.raise_for_status()  
 
-        # Extract the chatbot's response
         return (
             response.json()
             .get("choices", [{}])[0]
@@ -126,18 +117,17 @@ def ask_groq(user_message):
         print("Groq API Error:", e)
         return "Sorry, I couldn't fetch a response. Please check your internet connection."
 
-# Flask route for the chatbot
 @app.route('/ask-ai', methods=['POST'])
 def ask_ai():
     data = request.json
     user_input = data.get("query", "")
     if not user_input:
         return jsonify({"response": "<b>Please provide a valid query.</b>"}), 400
-
-    # Get response from Groq API
-    response = ask_groq(user_input)
-    formatted_response = f"<b>{response}</b>"  # Make the response bold
-    return jsonify({"response": formatted_response})
+    if "cpu" in user_input.lower() or "memory" in user_input.lower() or "disk" in user_input.lower():
+        response = detect_and_execute_intent(user_input)
+    else:
+        response = ask_groq(user_input)
+    return jsonify({"response": f"<b>{response}</b>"})
 
 @app.route('/api/processes', methods=['GET'])
 def fetch_processes():
