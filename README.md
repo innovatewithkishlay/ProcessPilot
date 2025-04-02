@@ -76,7 +76,7 @@
 
 ## Usage
 
-1. Open the web application in your browser (default: `http://localhost:5174`).
+1. Open the web application in your browser (default: `http://localhost:5173`).
 2. Use the sidebar to navigate between features:
    - **All Processes**: View and manage all running processes.
    - **High CPU Usage**: Filter processes consuming high CPU resources.
