@@ -61,38 +61,21 @@ def execute_command(command, args):
 def detect_and_execute_intent(user_input):
     user_input = user_input.lower()
 
-    if "move file" in user_input:
-        parts = user_input.split(" to ")
-        src = parts[0].replace("move file ", "").strip()
-        dest = parts[1].strip()
-        return execute_command("move_file", (src, dest))
-    elif "delete" in user_input and "file" in user_input:
-        file_path = user_input.replace("delete file ", "").strip()
-        return execute_command("delete_file", (file_path,))
-    elif "rename file" in user_input:
-        parts = user_input.split(" to ")
-        src = parts[0].replace("rename file ", "").strip()
-        dest = parts[1].strip()
-        return execute_command("rename_file", (src, dest))
-
-    elif "cpu usage" in user_input:
+    if "cpu" in user_input and ("usage" in user_input or "status" in user_input):
         return execute_command("cpu_usage", None)
-    elif "memory usage" in user_input:
+    elif "memory" in user_input and ("usage" in user_input or "status" in user_input):
         return execute_command("memory_usage", None)
-    elif "disk usage" in user_input:
+    elif "disk" in user_input and ("usage" in user_input or "space" in user_input):
         return execute_command("disk_usage", None)
-
     elif "list processes" in user_input or "running processes" in user_input:
         processes = execute_command("list_processes", None)
         return "\n".join([f"PID: {proc['pid']}, Name: {proc['name']}, CPU: {proc['cpu_percent']}%" for proc in processes])
-
     elif "open task manager" in user_input:
         return execute_command("open_task_manager", None)
     elif "open file explorer" in user_input:
         return execute_command("open_file_explorer", None)
-
     else:
-        return ask_groq(user_input)
+        return "Sorry, I couldn't understand your query."
 
 def ask_groq(user_message):
     try:
@@ -123,10 +106,15 @@ def ask_ai():
     user_input = data.get("query", "")
     if not user_input:
         return jsonify({"response": "<b>Please provide a valid query.</b>"}), 400
-    if "cpu" in user_input.lower() or "memory" in user_input.lower() or "disk" in user_input.lower():
+
+    # Check if the query is related to the system
+    system_keywords = ["cpu", "memory", "disk", "process", "task manager", "file explorer", "usage", "status"]
+    if any(keyword in user_input.lower() for keyword in system_keywords):
         response = detect_and_execute_intent(user_input)
     else:
+        # Forward the query to the Groq API
         response = ask_groq(user_input)
+
     return jsonify({"response": f"<b>{response}</b>"})
 
 @app.route('/api/processes', methods=['GET'])

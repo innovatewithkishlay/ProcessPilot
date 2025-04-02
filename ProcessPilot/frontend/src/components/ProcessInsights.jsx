@@ -8,7 +8,7 @@ function ProcessInsights() {
     const fetchInsights = async () => {
       try {
         const response = await axios.get(
-          "https://processpilot.onrender.com/api/process-insights"
+          "http://127.0.0.1:5000/api/process-insights"
         );
 
         const validProcesses = response.data.filter(
