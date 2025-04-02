@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from process_utils import get_processes, kill_process
+import logging
 
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -18,6 +19,8 @@ if not GROQ_API_KEY:
 
 app = Flask(__name__)
 CORS(app)
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def execute_command(command, args):
     try:
@@ -104,6 +107,7 @@ def ask_groq(user_message):
 def ask_ai():
     data = request.json
     user_input = data.get("query", "")
+    logging.info(f"Received query: {user_input}")
     if not user_input:
         return jsonify({"response": "<b>Please provide a valid query.</b>"}), 400
 
