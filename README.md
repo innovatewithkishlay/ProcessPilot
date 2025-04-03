@@ -94,6 +94,34 @@
 
 ---
 
+## Screenshots
+
+### 1. Dashboard Overview and list of All Processes
+
+![Dashboard Overview](https://github.com/innovatewithkishlay/ProcessPilot/blob/main/imagesForReadme/image1.png)
+
+### 2. High Cpu Usuage
+
+![Process List](https://github.com/innovatewithkishlay/ProcessPilot/blob/main/imagesForReadme/image2.png)
+
+### 3. High Memory Usuage
+
+![High CPU Usage Filter](https://github.com/innovatewithkishlay/ProcessPilot/blob/main/imagesForReadme/image3.png)
+
+### 4. AI Chatbot
+
+![AI Chatbot](https://github.com/innovatewithkishlay/ProcessPilot/blob/main/imagesForReadme/image4.png)
+
+### 5. CPU Usage Graph and System detail
+
+![CPU Usage Graph](https://github.com/innovatewithkishlay/ProcessPilot/blob/main/imagesForReadme/image5.png)
+
+### 6. Process Insights
+
+![System Details](https://github.com/innovatewithkishlay/ProcessPilot/blob/main/imagesForReadme/image6.png)
+
+---
+
 ## API Endpoints
 
 ### Backend API
