@@ -218,6 +218,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Author
 
-Developed by **Kishlay Kumar**.
+Developed by ** Kishlay kumar (Group leader),Saurabh Singh, Koushik gosh**.
 
 Feel free to reach out for any questions or suggestions!
